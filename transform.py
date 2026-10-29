@@ -1,9 +1,24 @@
 import pandas as pd
+import logging
 from datetime import datetime
 
 def transformar(df):
-    df = df[["external", "cheapest"]].copy()
-    df["cheapest"] = df["cheapest"].astype(float)
+    if df.empty:
+        return df
+
+    df = df[["gameID", "external", "cheapest"]].copy()
+
+    df["cheapest"] = pd.to_numeric(df["cheapest"], errors="coerce")
+    invalidos = df["cheapest"].isna().sum()
+    if invalidos > 0:
+        logging.warning(f"Se descartaron {invalidos} fila(s) con 'cheapest' inválido o ausente")
+        df = df.dropna(subset=["cheapest"])
+
+    duplicados = df.duplicated(subset=["gameID"]).sum()
+    if duplicados > 0:
+        logging.warning(f"Se descartaron {duplicados} fila(s) duplicada(s) por gameID repetido en esta corrida")
+        df = df.drop_duplicates(subset=["gameID"], keep="first")
+
     df["fecha_extraccion"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     df = df.sort_values("cheapest")
     return df
