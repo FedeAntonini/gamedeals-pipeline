@@ -6,7 +6,7 @@ def transformar(df):
     if df.empty:
         return df
 
-    df = df[["gameID", "external", "cheapest"]].copy()
+    df = df[["gameID", "external", "internalName", "thumb", "steamAppID", "cheapest"]].copy()
 
     df["cheapest"] = pd.to_numeric(df["cheapest"], errors="coerce")
     invalidos = df["cheapest"].isna().sum()
@@ -21,4 +21,11 @@ def transformar(df):
 
     df["fecha_extraccion"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     df = df.sort_values("cheapest")
+    return df
+
+
+def agregar_precio_regional(df, precios_regionales):
+    df = df.copy()
+    df["precio_ar"] = df["steamAppID"].map(lambda sid: precios_regionales.get(str(sid), {}).get("precio"))
+    df["moneda_ar"] = df["steamAppID"].map(lambda sid: precios_regionales.get(str(sid), {}).get("moneda"))
     return df
