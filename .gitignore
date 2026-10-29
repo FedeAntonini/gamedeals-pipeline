@@ -1,4 +1,7 @@
 venv/
 juegos.db
+juegos_backup.db
 __pycache__/
 *.pyc
+pipeline.log
+.pytest_cache/
