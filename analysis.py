@@ -102,3 +102,51 @@ def analizar_juego(gameID, db_path="juegos.db"):
         "internacional": analizar_precio(observaciones_internacional, ultima_verificacion),
         "argentina": analizar_precio(observaciones_ar, ultima_verificacion),
     }
+
+def clasificar_oferta(precio_final, precio_lista, descuento):
+    """Clasifica una oferta de Steam según la profundidad del descuento y el nivel de precio.
+
+    Se apoya solo en el descuento que informa Steam en este momento;
+    no usa historial, así que no dice si el precio es bajo respecto del pasado.
+    """
+    if precio_final is None or precio_lista is None or descuento is None:
+        return {
+            "profundidad": "sin_datos",
+            "nivel_precio": "sin_datos",
+            "explicacion": "No hay datos de precio de Steam para este juego, no se puede clasificar la oferta.",
+        }
+
+    if descuento <= 0:
+        profundidad = "sin_oferta"
+    elif descuento < 30:
+        profundidad = "menor"
+    elif descuento < 50:
+        profundidad = "moderada"
+    elif descuento < 65:
+        profundidad = "buena"
+    else:
+        profundidad = "excepcional"
+
+    if precio_final <= 10:
+        nivel_precio = "economico"
+    elif precio_final <= 30:
+        nivel_precio = "medio"
+    else:
+        nivel_precio = "caro"
+
+    if profundidad == "sin_oferta":
+        explicacion = f"Steam no informa descuento: el precio actual es USD {precio_final:.2f}."
+    else:
+        explicacion = (
+            f"Steam informa {descuento}% de descuento "
+            f"(de USD {precio_lista:.2f} a USD {precio_final:.2f}): "
+            f"descuento {profundidad}, juego de rango {nivel_precio}. "
+            "Esta clasificación se basa solo en el descuento de Steam; "
+            "no compara contra el historial de precios."
+        )
+
+    return {
+        "profundidad": profundidad,
+        "nivel_precio": nivel_precio,
+        "explicacion": explicacion,
+    }

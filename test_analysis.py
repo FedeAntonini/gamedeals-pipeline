@@ -1,4 +1,4 @@
-from analysis import analizar_precio, analizar_juego
+from analysis import analizar_precio, analizar_juego, clasificar_oferta
 import sqlite3
 
 
@@ -85,3 +85,43 @@ def test_analizar_juego_no_encontrado(tmp_path):
     resultado = analizar_juego("999", db_path=ruta_db)
 
     assert "error" in resultado
+
+import pytest
+
+@pytest.mark.parametrize("descuento, esperado", [
+    (0, "sin_oferta"),
+    (29, "menor"),
+    (30, "moderada"),
+    (49, "moderada"),
+    (50, "buena"),
+    (64, "buena"),
+    (65, "excepcional"),
+    (90, "excepcional"),
+])
+def test_profundidad_del_descuento(descuento, esperado):
+    resultado = clasificar_oferta(precio_final=20.0, precio_lista=40.0, descuento=descuento)
+    assert resultado["profundidad"] == esperado
+
+
+@pytest.mark.parametrize("precio_final, esperado", [
+    (4.99, "economico"),
+    (10.0, "economico"),
+    (10.01, "medio"),
+    (30.0, "medio"),
+    (30.01, "caro"),
+])
+def test_nivel_de_precio(precio_final, esperado):
+    resultado = clasificar_oferta(precio_final=precio_final, precio_lista=precio_final * 2, descuento=50)
+    assert resultado["nivel_precio"] == esperado
+
+
+def test_oferta_sin_datos_no_inventa_clasificacion():
+    resultado = clasificar_oferta(precio_final=None, precio_lista=None, descuento=None)
+    assert resultado["profundidad"] == "sin_datos"
+    assert resultado["nivel_precio"] == "sin_datos"
+
+
+def test_explicacion_aclara_que_no_usa_historial():
+    resultado = clasificar_oferta(precio_final=35.0, precio_lista=70.0, descuento=50)
+    assert "no compara contra el historial" in resultado["explicacion"]
+    assert "35.00" in resultado["explicacion"]
