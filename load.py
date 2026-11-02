@@ -1,5 +1,9 @@
 import sqlite3
 import logging
+import pandas as pd
+
+def _a_none(valor):
+    return None if pd.isna(valor) else valor
 
 def _crear_tablas(conn):
     conn.execute("""
@@ -39,7 +43,8 @@ def cargar(df, db_path="juegos.db"):
                     internal_name = excluded.internal_name,
                     thumb = excluded.thumb,
                     ultima_verificacion = excluded.ultima_verificacion
-            """, (fila["gameID"], fila["external"], fila.get("internalName"), fila.get("thumb"), fila["fecha_extraccion"]))
+            """, (fila["gameID"], fila["external"], _a_none(fila.get("internalName")),
+                  _a_none(fila.get("thumb")), fila["fecha_extraccion"]))
 
             ultimo = cursor.execute("""
                 SELECT cheapest, precio_ar FROM price_observations
@@ -47,14 +52,15 @@ def cargar(df, db_path="juegos.db"):
                 ORDER BY id DESC LIMIT 1
             """, (fila["gameID"],)).fetchone()
 
-            precio_ar = fila.get("precio_ar")
+            precio_ar = _a_none(fila.get("precio_ar"))
+            moneda_ar = _a_none(fila.get("moneda_ar"))
             cambio = ultimo is None or ultimo[0] != fila["cheapest"] or ultimo[1] != precio_ar
 
             if cambio:
                 cursor.execute("""
                     INSERT INTO price_observations (gameID, cheapest, precio_ar, moneda_ar, fecha_extraccion)
                     VALUES (?, ?, ?, ?, ?)
-                """, (fila["gameID"], fila["cheapest"], precio_ar, fila.get("moneda_ar"), fila["fecha_extraccion"]))
+                """, (fila["gameID"], fila["cheapest"], precio_ar, moneda_ar, fila["fecha_extraccion"]))
                 nuevas_observaciones += 1
 
         conn.commit()
