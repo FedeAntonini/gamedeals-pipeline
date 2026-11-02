@@ -56,3 +56,37 @@ def test_analysis_de_juego_existente(client):
 def test_analysis_de_juego_inexistente_es_404(client):
     respuesta = client.get("/games/999/analysis")
     assert respuesta.status_code == 404
+
+@pytest.fixture
+def client_con_oferta(tmp_path, monkeypatch):
+    ruta = str(tmp_path / "test.db")
+    df = pd.DataFrame([{
+        "gameID": "2",
+        "external": "Juego En Oferta",
+        "internalName": "JUEGOENOFERTA",
+        "thumb": "http://thumb",
+        "cheapest": 19.99,
+        "precio_ar": 9.99,
+        "moneda_ar": "USD",
+        "initial_ar": 19.98,
+        "descuento_ar": 50,
+        "fecha_extraccion": "2026-11-01 10:00:00",
+    }])
+    cargar(df, db_path=ruta)
+    monkeypatch.setattr(api, "DB_PATH", ruta)
+    return TestClient(api.app)
+
+
+def test_deals_sin_ofertas_devuelve_lista_vacia(client):
+    respuesta = client.get("/deals")
+    assert respuesta.status_code == 200
+    assert respuesta.json() == []
+
+
+def test_deals_incluye_la_clasificacion(client_con_oferta):
+    respuesta = client_con_oferta.get("/deals")
+    assert respuesta.status_code == 200
+    oferta = respuesta.json()[0]
+    assert oferta["external"] == "Juego En Oferta"
+    assert oferta["clasificacion"]["profundidad"] == "buena"
+    assert oferta["clasificacion"]["nivel_precio"] == "economico"

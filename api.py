@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from analysis import analizar_juego
+from analysis import analizar_juego, listar_ofertas
 from queries import listar_juegos, obtener_historial
 
 DB_PATH = "juegos.db"
@@ -23,3 +23,7 @@ def get_game_analysis(game_id: str):
     if "error" in resultado:
         raise HTTPException(status_code=404, detail=resultado["error"])
     return resultado
+
+@app.get("/deals")
+def get_deals():
+    return listar_ofertas(DB_PATH)

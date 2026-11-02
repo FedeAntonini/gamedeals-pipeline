@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 from load import cargar
-from queries import listar_juegos, obtener_historial
+from queries import listar_juegos, obtener_historial, obtener_ofertas_vigentes
 
 
 def _cargar_juego(ruta, game_id, nombre, precio, fecha):
@@ -56,3 +56,35 @@ def test_juego_existente_sin_observaciones_devuelve_lista_vacia(tmp_path):
     conn.close()
 
     assert obtener_historial("1", ruta) == []
+
+def _df_oferta(game_id, precio_ar, initial_ar, descuento, fecha):
+    return pd.DataFrame([{
+        "gameID": game_id,
+        "external": f"Juego {game_id}",
+        "internalName": f"JUEGO{game_id}",
+        "thumb": "http://thumb",
+        "cheapest": 20.0,
+        "precio_ar": precio_ar,
+        "moneda_ar": "USD",
+        "initial_ar": initial_ar,
+        "descuento_ar": descuento,
+        "fecha_extraccion": fecha,
+    }])
+
+
+def test_ofertas_vigentes_incluye_juegos_con_descuento(tmp_path):
+    ruta = str(tmp_path / "test.db")
+    cargar(_df_oferta("1", 5.0, 10.0, 50, "2026-11-01 10:00:00"), db_path=ruta)
+
+    ofertas = obtener_ofertas_vigentes(ruta)
+
+    assert [o["gameID"] for o in ofertas] == ["1"]
+    assert ofertas[0]["descuento_ar"] == 50
+
+
+def test_oferta_que_ya_termino_no_aparece_como_vigente(tmp_path):
+    ruta = str(tmp_path / "test.db")
+    cargar(_df_oferta("1", 5.0, 10.0, 50, "2026-11-01 10:00:00"), db_path=ruta)
+    cargar(_df_oferta("1", 10.0, 10.0, 0, "2026-11-03 10:00:00"), db_path=ruta)
+
+    assert obtener_ofertas_vigentes(ruta) == []

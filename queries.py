@@ -34,3 +34,21 @@ def obtener_historial(gameID, db_path="juegos.db"):
     """, (gameID,)).fetchall()
     conn.close()
     return [dict(fila) for fila in filas]
+
+def obtener_ofertas_vigentes(db_path="juegos.db"):
+    """Juegos cuya última observación tiene un descuento de Steam mayor a cero."""
+    conn = _conectar(db_path)
+    filas = conn.execute("""
+        SELECT g.gameID, g.external, g.thumb,
+               p.precio_ar, p.moneda_ar, p.initial_ar, p.descuento_ar,
+               p.fecha_extraccion
+        FROM games g
+        JOIN price_observations p ON p.gameID = g.gameID
+        WHERE p.id = (
+            SELECT MAX(id) FROM price_observations WHERE gameID = g.gameID
+        )
+        AND p.descuento_ar > 0
+        ORDER BY p.descuento_ar DESC, g.external
+    """).fetchall()
+    conn.close()
+    return [dict(fila) for fila in filas]

@@ -1,5 +1,6 @@
 from datetime import datetime
 import sqlite3
+from queries import obtener_ofertas_vigentes
 
 def analizar_precio(observaciones, ultima_verificacion, umbral_dias=7, umbral_porcentaje=15):
     observaciones = [(f, p) for f, p in observaciones if p is not None]
@@ -150,3 +151,11 @@ def clasificar_oferta(precio_final, precio_lista, descuento):
         "nivel_precio": nivel_precio,
         "explicacion": explicacion,
     }
+
+def listar_ofertas(db_path="juegos.db"):
+    ofertas = obtener_ofertas_vigentes(db_path)
+    for oferta in ofertas:
+        oferta["clasificacion"] = clasificar_oferta(
+            oferta["precio_ar"], oferta["initial_ar"], oferta["descuento_ar"]
+        )
+    return ofertas
