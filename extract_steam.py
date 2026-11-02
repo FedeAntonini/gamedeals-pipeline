@@ -27,8 +27,13 @@ def extraer_precios_regionales(steam_app_ids, cc="ar"):
         overview = resultado.get("data", {}).get("price_overview") if resultado.get("success") else None
 
         if overview is None:
-            precios[app_id] = {"precio": None, "moneda": None}
+            precios[app_id] = {"precio": None, "moneda": None, "precio_lista": None, "descuento": None}
         else:
-            precios[app_id] = {"precio": overview["final"] / 100, "moneda": overview["currency"]}
+            precios[app_id] = {
+                "precio": overview["final"] / 100,
+                "moneda": overview["currency"],
+                "precio_lista": overview["initial"] / 100,
+                "descuento": overview["discount_percent"],
+            }
 
     return precios

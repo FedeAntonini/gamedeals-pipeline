@@ -62,11 +62,16 @@ def test_agregar_precio_regional_combina_datos():
     })
 
     precios_regionales = {
-        "111": {"precio": 9.99, "moneda": "USD"}
+        "111": {"precio": 9.99, "moneda": "USD", "precio_lista": 19.98, "descuento": 50}
     }
 
     resultado = agregar_precio_regional(df, precios_regionales)
+    con_steam = resultado[resultado["gameID"] == "1"].iloc[0]
+    sin_steam = resultado[resultado["gameID"] == "2"].iloc[0]
 
-    assert resultado.loc[resultado["gameID"] == "1", "precio_ar"].iloc[0] == 9.99
-    assert resultado.loc[resultado["gameID"] == "1", "moneda_ar"].iloc[0] == "USD"
-    assert resultado.loc[resultado["gameID"] == "2", "precio_ar"].isna().iloc[0]
+    assert con_steam["precio_ar"] == 9.99
+    assert con_steam["moneda_ar"] == "USD"
+    assert con_steam["initial_ar"] == 19.98
+    assert con_steam["descuento_ar"] == 50
+    assert pd.isna(sin_steam["precio_ar"])
+    assert pd.isna(sin_steam["descuento_ar"])

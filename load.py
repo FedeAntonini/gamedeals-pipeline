@@ -3,7 +3,9 @@ import logging
 import pandas as pd
 
 def _a_none(valor):
-    return None if pd.isna(valor) else valor
+    if pd.isna(valor):
+        return None
+    return valor.item() if hasattr(valor, "item") else valor
 
 def _crear_tablas(conn):
     conn.execute("""
@@ -22,6 +24,8 @@ def _crear_tablas(conn):
             cheapest REAL,
             precio_ar REAL,
             moneda_ar TEXT,
+            initial_ar REAL,
+            descuento_ar INTEGER,
             fecha_extraccion TEXT,
             FOREIGN KEY (gameID) REFERENCES games(gameID)
         )
@@ -47,20 +51,30 @@ def cargar(df, db_path="juegos.db"):
                   _a_none(fila.get("thumb")), fila["fecha_extraccion"]))
 
             ultimo = cursor.execute("""
-                SELECT cheapest, precio_ar FROM price_observations
+                SELECT cheapest, precio_ar, descuento_ar FROM price_observations
                 WHERE gameID = ?
                 ORDER BY id DESC LIMIT 1
             """, (fila["gameID"],)).fetchone()
 
             precio_ar = _a_none(fila.get("precio_ar"))
             moneda_ar = _a_none(fila.get("moneda_ar"))
-            cambio = ultimo is None or ultimo[0] != fila["cheapest"] or ultimo[1] != precio_ar
+            initial_ar = _a_none(fila.get("initial_ar"))
+            descuento_ar = _a_none(fila.get("descuento_ar"))
+
+            cambio = (
+                ultimo is None
+                or ultimo[0] != fila["cheapest"]
+                or ultimo[1] != precio_ar
+                or ultimo[2] != descuento_ar
+            )
 
             if cambio:
                 cursor.execute("""
-                    INSERT INTO price_observations (gameID, cheapest, precio_ar, moneda_ar, fecha_extraccion)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (fila["gameID"], fila["cheapest"], precio_ar, moneda_ar, fila["fecha_extraccion"]))
+                    INSERT INTO price_observations
+                        (gameID, cheapest, precio_ar, moneda_ar, initial_ar, descuento_ar, fecha_extraccion)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (fila["gameID"], fila["cheapest"], precio_ar, moneda_ar,
+                      initial_ar, descuento_ar, fila["fecha_extraccion"]))
                 nuevas_observaciones += 1
 
         conn.commit()

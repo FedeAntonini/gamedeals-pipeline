@@ -26,6 +26,14 @@ def transformar(df):
 
 def agregar_precio_regional(df, precios_regionales):
     df = df.copy()
-    df["precio_ar"] = df["steamAppID"].map(lambda sid: precios_regionales.get(str(sid), {}).get("precio"))
-    df["moneda_ar"] = df["steamAppID"].map(lambda sid: precios_regionales.get(str(sid), {}).get("moneda"))
+    columnas = {
+        "precio_ar": "precio",
+        "moneda_ar": "moneda",
+        "initial_ar": "precio_lista",
+        "descuento_ar": "descuento",
+    }
+    for columna, clave in columnas.items():
+        df[columna] = df["steamAppID"].map(
+            lambda sid, c=clave: precios_regionales.get(str(sid), {}).get(c)
+        )
     return df
