@@ -32,4 +32,8 @@ def main():
         logging.error("Pipeline finalizado CON ERRORES en la carga")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        logging.exception("El pipeline falló con un error no controlado")
+        raise

@@ -3,8 +3,6 @@ import pandas as pd
 import json
 import logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
 def extraer_juegos():
     with open("config.json", "r") as f:
         config = json.load(f)
@@ -18,7 +16,7 @@ def extraer_juegos():
     for titulo in config["juegos"]:
         try:
             url = f"https://www.cheapshark.com/api/1.0/games?title={titulo}"
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()
             resultados.extend(response.json())
             logging.info(f"Extraidos datos para '{titulo}'")
